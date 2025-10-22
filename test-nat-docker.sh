@@ -91,14 +91,23 @@ get_bootstrap_peer_id() {
     log_info "Waiting for bootstrap node to start..."
     sleep 10
 
+    log_info "Extracting peer ID from bootstrap logs..."
+
     # Try to extract peer ID from libp2p_swarm log line: local_peer_id=...
-    local peer_id=$(docker logs chiral-bootstrap 2>&1 | grep -oP 'local_peer_id=\K[A-Za-z0-9]+' | head -1)
+    local peer_id
+    peer_id=$(docker logs chiral-bootstrap 2>&1 | grep -oP 'local_peer_id=\K[A-Za-z0-9]+' | head -1 || true)
 
     if [ -z "$peer_id" ]; then
         log_error "Could not extract bootstrap peer ID from logs"
-        log_error "Last 20 lines of bootstrap logs:"
-        docker logs chiral-bootstrap 2>&1 | tail -20
-        return 1
+        log_error "Last 30 lines of bootstrap logs:"
+        docker logs chiral-bootstrap 2>&1 | tail -30 || true
+        log_error "Trying alternative extraction method..."
+        peer_id=$(docker logs chiral-bootstrap 2>&1 | grep "local_peer_id" | head -1 | sed 's/.*local_peer_id=\([A-Za-z0-9]*\).*/\1/' || true)
+
+        if [ -z "$peer_id" ]; then
+            log_error "All extraction methods failed"
+            return 1
+        fi
     fi
 
     log_success "Bootstrap peer ID: $peer_id"
