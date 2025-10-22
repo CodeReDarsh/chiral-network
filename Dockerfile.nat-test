@@ -40,6 +40,9 @@ COPY src-tauri/src ./src/
 COPY src-tauri/build.rs ./
 COPY src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json ./
 
+# Create dummy dist directory to satisfy Tauri build check (headless mode doesn't need frontend)
+RUN mkdir -p /app/dist && echo '<!DOCTYPE html><html><body>Headless Mode</body></html>' > /app/dist/index.html
+
 # Build the actual binary
 RUN cargo build --release --bin chiral-network
 
