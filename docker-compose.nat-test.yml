@@ -50,7 +50,6 @@ services:
       --headless
       --dht-port 4001
       --is-bootstrap
-      --enable-geth=false
       --show-reachability
       --show-dcutr
       --relay
@@ -83,7 +82,6 @@ services:
       --headless
       --dht-port 4001
       --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
-      --enable-geth=false
       --show-reachability
       --show-dcutr
     volumes:
@@ -115,7 +113,6 @@ services:
       --headless
       --dht-port 4001
       --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
-      --enable-geth=false
       --show-reachability
       --show-dcutr
     volumes:
@@ -147,7 +144,6 @@ services:
       --headless
       --dht-port 4001
       --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
-      --enable-geth=false
       --show-reachability
       --show-dcutr
     volumes:
@@ -178,7 +174,6 @@ services:
       --headless
       --dht-port 4001
       --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
-      --enable-geth=false
       --show-reachability
       --show-dcutr
     volumes:
