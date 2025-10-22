@@ -1,0 +1,198 @@
+version: '3.8'
+
+# Docker Compose setup for NAT traversal testing
+# This creates multiple isolated networks to simulate real NAT scenarios
+
+networks:
+  # Public network (simulates the internet)
+  public_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+  # Private network 1 (simulates home network behind NAT)
+  private_net_1:
+    driver: bridge
+    internal: false  # Can access public_net but not directly accessible
+    ipam:
+      config:
+        - subnet: 10.1.0.0/24
+          gateway: 10.1.0.1
+
+  # Private network 2 (simulates corporate network behind different NAT)
+  private_net_2:
+    driver: bridge
+    internal: false
+    ipam:
+      config:
+        - subnet: 10.2.0.0/24
+          gateway: 10.2.0.1
+
+services:
+  # Public bootstrap node (acts as relay and bootstrap)
+  bootstrap:
+    build:
+      context: .
+      dockerfile: Dockerfile.nat-test
+    container_name: chiral-bootstrap
+    hostname: bootstrap
+    networks:
+      public_net:
+        ipv4_address: 172.20.0.10
+    ports:
+      - "4001:4001"  # Expose DHT port to host
+    environment:
+      - RUST_LOG=info,chiral_network=debug,libp2p=debug
+      - CHIRAL_DISABLE_AUTORELAY=0
+    command: >
+      --headless
+      --dht-port 4001
+      --is-bootstrap
+      --enable-geth=false
+      --show-reachability
+      --show-dcutr
+      --relay
+    volumes:
+      - bootstrap-data:/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Private peer 1 (behind NAT 1)
+  peer1:
+    build:
+      context: .
+      dockerfile: Dockerfile.nat-test
+    container_name: chiral-peer1
+    hostname: peer1
+    networks:
+      private_net_1:
+        ipv4_address: 10.1.0.10
+      public_net:  # Also connected to public for internet access
+    depends_on:
+      - bootstrap
+    environment:
+      - RUST_LOG=info,chiral_network=debug,libp2p_dcutr=debug
+      - CHIRAL_DISABLE_AUTORELAY=0
+    command: >
+      --headless
+      --dht-port 4001
+      --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
+      --enable-geth=false
+      --show-reachability
+      --show-dcutr
+    volumes:
+      - peer1-data:/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Private peer 2 (behind NAT 2)
+  peer2:
+    build:
+      context: .
+      dockerfile: Dockerfile.nat-test
+    container_name: chiral-peer2
+    hostname: peer2
+    networks:
+      private_net_2:
+        ipv4_address: 10.2.0.10
+      public_net:  # Also connected to public for internet access
+    depends_on:
+      - bootstrap
+    environment:
+      - RUST_LOG=info,chiral_network=debug,libp2p_dcutr=debug
+      - CHIRAL_DISABLE_AUTORELAY=0
+    command: >
+      --headless
+      --dht-port 4001
+      --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
+      --enable-geth=false
+      --show-reachability
+      --show-dcutr
+    volumes:
+      - peer2-data:/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Private peer 3 (behind same NAT as peer1)
+  peer3:
+    build:
+      context: .
+      dockerfile: Dockerfile.nat-test
+    container_name: chiral-peer3
+    hostname: peer3
+    networks:
+      private_net_1:
+        ipv4_address: 10.1.0.11
+      public_net:
+    depends_on:
+      - bootstrap
+    environment:
+      - RUST_LOG=info,chiral_network=debug,libp2p_dcutr=debug
+      - CHIRAL_DISABLE_AUTORELAY=0
+    command: >
+      --headless
+      --dht-port 4001
+      --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
+      --enable-geth=false
+      --show-reachability
+      --show-dcutr
+    volumes:
+      - peer3-data:/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Public peer (no NAT)
+  public-peer:
+    build:
+      context: .
+      dockerfile: Dockerfile.nat-test
+    container_name: chiral-public-peer
+    hostname: public-peer
+    networks:
+      public_net:
+        ipv4_address: 172.20.0.20
+    depends_on:
+      - bootstrap
+    environment:
+      - RUST_LOG=info,chiral_network=debug,libp2p_dcutr=debug
+      - CHIRAL_DISABLE_AUTORELAY=0
+    command: >
+      --headless
+      --dht-port 4001
+      --bootstrap /ip4/172.20.0.10/tcp/4001/p2p/BOOTSTRAP_PEER_ID
+      --enable-geth=false
+      --show-reachability
+      --show-dcutr
+    volumes:
+      - public-peer-data:/data
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bootstrap-data:
+  peer1-data:
+  peer2-data:
+  peer3-data:
+  public-peer-data:
