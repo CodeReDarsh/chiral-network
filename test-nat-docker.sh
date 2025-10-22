@@ -95,7 +95,7 @@ get_bootstrap_peer_id() {
 
     # Extract peer ID from libp2p_swarm log line by matching the peer ID pattern
     local peer_id
-    peer_id=$(docker logs chiral-bootstrap 2>&1 | grep "local_peer_id=" | grep -oE '12D3[A-Za-z0-9]{44,}' | head -1 || true)
+    peer_id=$(docker logs chiral-bootstrap 2>&1 | grep "local_peer_id" | grep -oE '12D3[A-Za-z0-9]{44,}' | head -1 || true)
 
     if [ -z "$peer_id" ]; then
         log_error "Could not extract bootstrap peer ID from logs"
@@ -114,7 +114,9 @@ update_bootstrap_peer_id() {
     log_info "Updating docker-compose with bootstrap peer ID: $peer_id"
 
     # Replace BOOTSTRAP_PEER_ID placeholder in docker-compose file
-    sed -i.bak "s/BOOTSTRAP_PEER_ID/$peer_id/g" "$COMPOSE_FILE"
+    # Use a temporary file to avoid sed -i issues
+    cp "$COMPOSE_FILE" "${COMPOSE_FILE}.bak"
+    sed "s|BOOTSTRAP_PEER_ID|$peer_id|g" "${COMPOSE_FILE}.bak" > "$COMPOSE_FILE"
     log_success "Bootstrap peer ID updated"
 }
 

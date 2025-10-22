@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# NOTE: A more reliable Rust version exists at src-tauri/src/bin/nat_test.rs
+# Build with: cd src-tauri && cargo build --release --bin nat_test
+# Run with: sudo ./src-tauri/target/release/nat_test
+
 # NAT Traversal Validation Test Suite
 # Runs comprehensive tests to validate NAT traversal and hole-punching implementation
 
