@@ -8,6 +8,16 @@ set -e
 COMPOSE_FILE="docker-compose.nat-test.yml"
 DOCKER_IMAGE="chiral-network-nat-test"
 
+# Detect docker-compose command (v1 vs v2)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo "Error: Neither 'docker-compose' nor 'docker compose' found"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -64,7 +74,7 @@ check_prerequisites() {
 # Clean up existing containers
 cleanup() {
     log_info "Cleaning up existing containers and networks..."
-    docker-compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down -v 2>/dev/null || true
     docker network prune -f 2>/dev/null || true
     log_success "Cleanup complete"
 }
@@ -114,7 +124,7 @@ start_environment() {
     echo ""
 
     # Start bootstrap first
-    docker-compose -f "$COMPOSE_FILE" up -d bootstrap
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d bootstrap
     log_info "Bootstrap node starting..."
 
     # Get and set bootstrap peer ID
@@ -127,7 +137,7 @@ start_environment() {
     update_bootstrap_peer_id "$BOOTSTRAP_PEER_ID"
 
     # Start remaining peers
-    docker-compose -f "$COMPOSE_FILE" up -d
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d
     log_success "All containers started"
 
     # Restore original docker-compose file
@@ -361,9 +371,9 @@ main() {
     log_success "Docker NAT test environment is running!"
     echo ""
     echo "Commands:"
-    echo "  View logs:     docker-compose -f $COMPOSE_FILE logs -f [service]"
-    echo "  Stop:          docker-compose -f $COMPOSE_FILE down"
-    echo "  Restart:       docker-compose -f $COMPOSE_FILE restart"
+    echo "  View logs:     $DOCKER_COMPOSE -f $COMPOSE_FILE logs -f [service]"
+    echo "  Stop:          $DOCKER_COMPOSE -f $COMPOSE_FILE down"
+    echo "  Restart:       $DOCKER_COMPOSE -f $COMPOSE_FILE restart"
     echo ""
     echo "Services:"
     echo "  - bootstrap (relay node)"
@@ -373,11 +383,11 @@ main() {
     echo "  - public-peer (no NAT)"
     echo ""
     log_info "Leave the environment running to observe long-term behavior,"
-    log_info "or run 'docker-compose -f $COMPOSE_FILE down' to stop."
+    log_info "or run '$DOCKER_COMPOSE -f $COMPOSE_FILE down' to stop."
 }
 
 # Trap Ctrl+C
-trap 'log_warning "Test interrupted. Run: docker-compose -f $COMPOSE_FILE down"; exit 1' INT
+trap 'log_warning "Test interrupted. Run: $DOCKER_COMPOSE -f $COMPOSE_FILE down"; exit 1' INT
 
 # Run main
 main "$@"
