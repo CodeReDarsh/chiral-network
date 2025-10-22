@@ -52,7 +52,6 @@ services:
       --is-bootstrap
       --show-reachability
       --show-dcutr
-      --relay
     volumes:
       - bootstrap-data:/data
     restart: unless-stopped
