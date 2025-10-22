@@ -51,7 +51,8 @@ RUN mkdir -p /app/dist && echo '<!DOCTYPE html><html><body>Headless Mode</body><
 RUN cargo build --release --bin chiral-network
 
 # Stage 2: Runtime image
-FROM debian:bookworm-slim
+# Must match builder's Debian version (Trixie) for GLIBC compatibility
+FROM debian:trixie-slim
 
 # Install runtime dependencies (including GTK/GLib for Tauri)
 RUN apt-get update && apt-get install -y \
